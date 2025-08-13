@@ -312,7 +312,7 @@ public class RsaUtil {
     public static String decryptByPrivateKey256(String key, String dataStr) {
         try {
             byte[] result = decryptByPrivateKey(key, decryptBase64(dataStr),MAX_DECRYPT_BLOCK_256);
-            return new String(result);
+            return new String(result, "UTF-8");
         } catch (Exception ex) {
             throw new RuntimeException(ex);
         }
@@ -321,7 +321,7 @@ public class RsaUtil {
     public static String decryptByPrivateKey(String key, String dataStr) {
         try {
             byte[] result = decryptByPrivateKey(key, decryptBase64(dataStr),MAX_DECRYPT_BLOCK);
-            return new String(result);
+            return new String(result, "UTF-8");
         } catch (Exception ex) {
             throw new RuntimeException(ex);
         }
