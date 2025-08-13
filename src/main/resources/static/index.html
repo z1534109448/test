@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RSA 加解密/签名演示</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f9;
+        }
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            color: #333;
+            text-align: center;
+        }
+        .key-section, .main-section {
+            margin-bottom: 20px;
+        }
+        textarea, input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+        }
+        textarea {
+            height: 100px;
+            resize: vertical;
+        }
+        .button-group {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 15px;
+        }
+        button {
+            padding: 10px 15px;
+            border: none;
+            background-color: #007bff;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+            flex-grow: 1;
+            margin: 0 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #status {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+            font-weight: bold;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>RSA 加解密与签名演示</h1>
+
+    <div class="key-section">
+        <h2>1. 生成密钥对</h2>
+        <button id="generate-keys-btn">生成新的公钥/私钥</button>
+        <label for="public-key">公钥:</label>
+        <textarea id="public-key" readonly></textarea>
+        <label for="private-key">私钥:</label>
+        <textarea id="private-key" readonly></textarea>
+    </div>
+
+    <div class="main-section">
+        <h2>2. 功能演示</h2>
+        <label for="original-data">输入明文:</label>
+        <input type="text" id="original-data" placeholder="在这里输入任何你想处理的字符串...">
+
+        <div class="button-group">
+            <button id="encrypt-btn">公钥加密</button>
+            <button id="decrypt-btn">私钥解密</button>
+            <button id="sign-btn">私钥签名</button>
+            <button id="verify-btn">公钥验签</button>
+        </div>
+
+        <label for="encrypted-data">密文:</label>
+        <textarea id="encrypted-data" placeholder="加密结果会显示在这里..."></textarea>
+        <label for="signature">签名:</label>
+        <textarea id="signature" placeholder="签名结果会显示在这里..."></textarea>
+    </div>
+
+    <div id="status"></div>
+</div>
+
+<script>
+    const publicKeyEl = document.getElementById('public-key');
+    const privateKeyEl = document.getElementById('private-key');
+    const originalDataEl = document.getElementById('original-data');
+    const encryptedDataEl = document.getElementById('encrypted-data');
+    const signatureEl = document.getElementById('signature');
+    const statusEl = document.getElementById('status');
+
+    document.getElementById('generate-keys-btn').addEventListener('click', generateKeys);
+    document.getElementById('encrypt-btn').addEventListener('click', encryptData);
+    document.getElementById('decrypt-btn').addEventListener('click', decryptData);
+    document.getElementById('sign-btn').addEventListener('click', signData);
+    document.getElementById('verify-btn').addEventListener('click', verifyData);
+
+    async function generateKeys() {
+        try {
+            const response = await fetch('/api/crypto/generate-keys');
+            if (!response.ok) throw new Error('Network response was not ok');
+            const data = await response.json();
+            publicKeyEl.value = data.publicKey;
+            privateKeyEl.value = data.privateKey;
+            updateStatus('成功生成新的密钥对!', 'success');
+        } catch (error) {
+            console.error('Error generating keys:', error);
+            updateStatus('生成密钥失败!', 'error');
+        }
+    }
+
+    async function encryptData() {
+        const request = {
+            key: publicKeyEl.value,
+            data: originalDataEl.value
+        };
+        try {
+            const response = await fetch('/api/crypto/encrypt', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(request)
+            });
+            if (!response.ok) throw new Error('Network response was not ok');
+            const result = await response.json();
+            encryptedDataEl.value = result.data;
+            updateStatus('加密成功!', 'success');
+        } catch (error) {
+            console.error('Error encrypting data:', error);
+            updateStatus('加密失败!', 'error');
+        }
+    }
+
+    async function decryptData() {
+        const request = {
+            key: privateKeyEl.value,
+            data: encryptedDataEl.value
+        };
+        try {
+            const response = await fetch('/api/crypto/decrypt', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(request)
+            });
+            if (!response.ok) throw new Error('Network response was not ok');
+            const result = await response.json();
+            originalDataEl.value = result.data;
+            updateStatus('解密成功!', 'success');
+        } catch (error) {
+            console.error('Error decrypting data:', error);
+            updateStatus('解密失败!', 'error');
+        }
+    }
+
+    async function signData() {
+        const request = {
+            privateKey: privateKeyEl.value,
+            data: originalDataEl.value
+        };
+        try {
+            const response = await fetch('/api/crypto/sign', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(request)
+            });
+            if (!response.ok) throw new Error('Network response was not ok');
+            const result = await response.json();
+            signatureEl.value = result.data;
+            updateStatus('签名成功!', 'success');
+        } catch (error) {
+            console.error('Error signing data:', error);
+            updateStatus('签名失败!', 'error');
+        }
+    }
+
+    async function verifyData() {
+        const request = {
+            publicKey: publicKeyEl.value,
+            data: originalDataEl.value,
+            sign: signatureEl.value
+        };
+        try {
+            const response = await fetch('/api/crypto/verify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(request)
+            });
+            if (!response.ok) throw new Error('Network response was not ok');
+            const result = await response.json();
+            if (result.success) {
+                updateStatus('验签成功: 签名有效!', 'success');
+            } else {
+                updateStatus('验签失败: 签名无效!', 'error');
+            }
+        } catch (error) {
+            console.error('Error verifying data:', error);
+            updateStatus('验签时发生错误!', 'error');
+        }
+    }
+
+    function updateStatus(message, type) {
+        statusEl.textContent = message;
+        statusEl.className = type;
+    }
+
+</script>
+
+</body>
+</html>
